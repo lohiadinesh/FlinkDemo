@@ -7,6 +7,11 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Apache Flink and Beam Demo</name>
 	<description>Apache Flink and Beam Demo</description>
+	
+	<!-- Allow users to pass custom jcuda versions -->
+	<properties>
+		<jcuda.version>10.0.0</jcuda.version>
+	</properties>
 
 	<dependencies>
 
@@ -43,6 +48,34 @@
 			<artifactId>beam-runners-flink-1.12</artifactId>
 			<version>2.29.0</version>
 		</dependency>
+		
+		<!-- Dependencies for MatrixVectorMul. We exclude native libraries
+		because it is not available in all the operating systems and architectures. Moreover,
+		we also want to enable users to compile and run MatrixVectorMul in different runtime environments.-->
+		<dependency>
+			<groupId>org.jcuda</groupId>
+			<artifactId>jcuda</artifactId>
+			<version>${jcuda.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcuda-natives</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jcuda</groupId>
+			<artifactId>jcublas</artifactId>
+			<version>${jcuda.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.jcuda</groupId>
+					<artifactId>jcublas-natives</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+    
 	</dependencies>
 	<build>
 		<plugins>
@@ -69,6 +102,46 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				 <version>3.2.4</version>
+				<executions>
+					<execution>
+						<id>ArrayListPrint</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<shadeTestJar>false</shadeTestJar>
+							<finalName>ArrayListPrint</finalName>
+							<artifactSet>
+								<includes>
+									<include>org.jcuda:*</include>
+								</includes>
+							</artifactSet>
+							<filters>
+								<filter>
+									<artifact>com.slb.flinkdemo:*</artifact>
+									<includes>
+										<include>com/slb/flinkdemo/ArrayListPrint.class</include>
+										<include>com/slb/flinkdemo/ArrayListPrint$*.class</include>
+									</includes>
+								</filter>
+							</filters>
+							<transformers>
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<mainClass>com.slb.flinkdemo.ArrayListPrint</mainClass>
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			
+			
 		</plugins>
 	</build>
 </project>
